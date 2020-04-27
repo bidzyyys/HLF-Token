@@ -13,8 +13,8 @@ import org.hyperledger.fabric.contract.annotation.*;
                 description = "HLF ERC20 token contract",
                 version = "0.0.1-SNAPSHOT",
                 license = @License(
-                        name = "Apache 2.0 License",
-                        url = "http://www.apache.org/licenses/LICENSE-2.0.html"),
+                        name = "The GNU General Public License v3.0",
+                        url = "https://www.gnu.org/licenses/gpl-3.0.html"),
                 contact = @Contact(
                         name = "Daniel Bigos",
                         url = "https://github.com/bidzyyys")))
