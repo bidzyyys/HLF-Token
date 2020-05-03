@@ -4,6 +4,7 @@ import com.owlike.genson.Genson;
 import org.hyperledger.fabric.contract.Context;
 import org.hyperledger.fabric.contract.ContractInterface;
 import org.hyperledger.fabric.contract.annotation.*;
+import org.hyperledger.fabric.shim.ChaincodeException;
 import org.hyperledger.fabric.shim.ChaincodeStub;
 
 import java.math.BigInteger;
@@ -28,6 +29,10 @@ public final class TokenContract implements ContractInterface {
     public static final String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
     private final Genson genson = new Genson();
 
+    private enum TokenContractErrors {
+        INSUFFICIENT_FUNDS,
+    }
+
     /**
      * Retrieves balance of specified account.
      *
@@ -48,7 +53,7 @@ public final class TokenContract implements ContractInterface {
      * @param ctx     the transaction context
      * @param address address of the account
      * @param amount  amount to be minted
-     * @return balance of the account, 0 if unknown
+     * @return TransferEvent
      */
     @Transaction()
     public TransferEvent mint(final Context ctx, final String address, final BigInteger amount) {
@@ -57,6 +62,29 @@ public final class TokenContract implements ContractInterface {
         ChaincodeStub stub = ctx.getStub();
         stub.putStringState(address, genson.serialize(newBalance));
         return new TransferEvent(ZERO_ADDRESS, address, amount);
+    }
+
+    /**
+     * Burns specified amount.
+     *
+     * @param ctx     the transaction context
+     * @param address address of the account
+     * @param amount  amount to be burnt
+     * @return TransferEvent
+     * @throws ChaincodeException if address has insufficient funds
+     */
+    @Transaction()
+    public TransferEvent burn(final Context ctx, final String address, final BigInteger amount) {
+        BigInteger currentBalance = balanceOf(ctx, address);
+
+        if (currentBalance.compareTo(amount) < 0) {
+            throw new ChaincodeException("Insufficient funds", TokenContractErrors.INSUFFICIENT_FUNDS.toString());
+        }
+
+        BigInteger newBalance = currentBalance.subtract(amount);
+        ChaincodeStub stub = ctx.getStub();
+        stub.putStringState(address, genson.serialize(newBalance));
+        return new TransferEvent(address, ZERO_ADDRESS, amount);
     }
 
 }
