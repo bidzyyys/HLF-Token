@@ -87,4 +87,33 @@ public final class TokenContract implements ContractInterface {
         return new TransferEvent(address, ZERO_ADDRESS, amount);
     }
 
+    /**
+     * Transfers funds.
+     *
+     * @param ctx      the transaction context
+     * @param sender   sender address
+     * @param receiver receiver address
+     * @param amount   amount to be burnt
+     * @return TransferEvent
+     * @throws ChaincodeException if has has insufficient funds
+     */
+    @Transaction()
+    public TransferEvent transferFrom(final Context ctx, final String sender, final String receiver, final BigInteger amount) {
+        BigInteger currentSenderBalance = balanceOf(ctx, sender);
+
+        if (currentSenderBalance.compareTo(amount) < 0) {
+            throw new ChaincodeException("Insufficient funds", TokenContractErrors.INSUFFICIENT_FUNDS.toString());
+        }
+
+        BigInteger currentReceiverBalance = balanceOf(ctx, sender);
+
+        BigInteger newSenderBalance = currentSenderBalance.subtract(amount);
+        BigInteger newReceiverBalance = currentReceiverBalance.add(amount);
+
+        ChaincodeStub stub = ctx.getStub();
+        stub.putStringState(sender, genson.serialize(newSenderBalance));
+        stub.putStringState(receiver, genson.serialize(newReceiverBalance));
+        return new TransferEvent(sender, receiver, amount);
+    }
+
 }

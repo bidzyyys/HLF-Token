@@ -98,4 +98,45 @@ public class TokenContractTest {
         assertEquals(address1, event.getSender());
         assertEquals(amount, event.getAmount());
     }
+
+    @Test
+    public void transferFromInsufficientFundsTest() {
+        when(stub.getStringState(address1)).thenReturn("");
+        when(stub.getStringState(address1)).thenReturn("");
+
+        assertEquals(BigInteger.ZERO, contract.balanceOf(ctx, address1));
+        BigInteger amount = new BigInteger("69");
+
+        Throwable thrown = catchThrowable(() -> {
+            contract.burn(ctx, address1, amount);
+        });
+
+        assertThat(thrown).isInstanceOf(ChaincodeException.class).hasNoCause()
+                .hasMessage("Insufficient funds");
+
+        assertThat(((ChaincodeException) thrown).getPayload()).isEqualTo("INSUFFICIENT_FUNDS".getBytes());
+    }
+
+    @Test
+    public void transferFromTest() {
+        BigInteger amount = new BigInteger("69");
+
+        when(stub.getStringState(address1)).thenReturn(genson.serialize(amount));
+        when(stub.getStringState(address2)).thenReturn("");
+
+        assertEquals(amount, contract.balanceOf(ctx, address1));
+        assertEquals(BigInteger.ZERO, contract.balanceOf(ctx, address2));
+
+        TransferEvent event = contract.transferFrom(ctx, address1, address2, amount);
+
+        assertEquals(address2, event.getReceiver());
+        assertEquals(address1, event.getSender());
+        assertEquals(amount, event.getAmount());
+
+        when(stub.getStringState(address2)).thenReturn(genson.serialize(amount));
+        when(stub.getStringState(address1)).thenReturn("");
+
+        assertEquals(amount, contract.balanceOf(ctx, address2));
+        assertEquals(BigInteger.ZERO, contract.balanceOf(ctx, address1));
+    }
 }
